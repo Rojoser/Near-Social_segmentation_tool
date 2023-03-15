@@ -42,7 +42,7 @@ since = np.min(df1_agg['Date'])
 last_updated = np.max(df1_agg['Date'])
 total_users = np.max(df1_agg['Daily Users'].cumsum())
 
-# Set st sidebar
+# Set sidebar to select timeframe
 with st.sidebar:
     st.write("Analysed Timeframe")
 
@@ -116,12 +116,8 @@ df9 = agg_by_column(df6[['user', 'staked_before_social']], 'staked_before_social
 
 df10 = agg_by_column(df6[['user', 'defi_category']], 'defi_category').rename({'user': 'wallets'}, axis=1)
 
-## Dataframe for signers - selected timeframe wallet age and social activity
-#df3 = df2[(df2['Date']>= np.datetime64(begin_date)) & (df2['Date']<= np.datetime64(end_date))]
-#df3
-
 # Set st tabs
-tabs = st.tabs(["Introduction", "Wallet age and address type", "Social.NEAR activity", "DeFi", "NFT"])
+tabs = st.tabs(["Introduction", "Wallet age and address type", "DeFi", "Social.NEAR activity", "Usage Notes and Methodology"])
 
 with tabs[0]: # Introduction
     st.write('''Social.NEAR is an on-chain social network built on the NEAR blockchain that has recently seen a surge 
@@ -262,10 +258,7 @@ with tabs[1]: # "Wallet age and address type
 
         st.plotly_chart(fig, use_container_width=True)
 
-with tabs[2]: # Social.NEAR activity
-    st.write('Tab2')
-
-with tabs[3]: # DeFi
+with tabs[2]: # DeFi
     st.write('''This Tab takes a look at the users DeFi activity. It will compare wallets based on swap and stake activity 
     and whether the users had swapped or staked before signing to Near Social.''')
 
@@ -282,8 +275,6 @@ with tabs[3]: # DeFi
 
     with st.container():
         cols = st.columns(3)
-        
-        st.dataframe(df6)
 
         with cols[0]:
             fig = px.pie(df7,
@@ -349,5 +340,24 @@ with tabs[3]: # DeFi
             st.plotly_chart(fig, use_container_width=True)
 
 
-with tabs[4]: # NFT
-    st.write('Tab2')
+with tabs[3]: # Near Social activity
+    st.write('Coming Soon - users profile according to their activity on Near Social')
+
+with tabs[4]: # Methodology
+    st.markdown('''
+        # Methodology
+
+        This dashboard was done using [Flipside Crypto](https://flipsidecrypto.xyz/) [ShroomDK](https://sdk.flipsidecrypto.xyz/shroomdk) API. 
+        The on-chain data was queried from the `fact_actions_events_addkey`, `fact_transactions`, `ez_dex_swaps` and `dim_staking_actions` tables
+        from the `near.core` schema.
+
+        All relevant project files can be accessed through its [GitHub public repo](https://github.com/Rojoser/Near-Social_segmentation_tool). 
+        Under the [Project Organization](https://github.com/Rojoser/Near-Social_segmentation_tool#project-organization) section, the SQL queries and 
+        csv files are available to anyone looking where the data came from:
+
+            - Raw SQL queries are saved as .txt files under the `data/queries` folder.
+
+            - Query results are saved as .csv files under the `data/csv` folder.
+
+            - A Jupyter Notebook (.ipynb file) with the API calls and SQL queries can be found under the `\notebook` folder in the project's repo.     
+    ''')
