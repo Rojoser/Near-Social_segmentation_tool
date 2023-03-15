@@ -1,0 +1,55 @@
+WITH
+sn_auths AS (
+   SELECT ak.block_timestamp,
+          ak.tx_hash,
+          ak.block_id,
+          ak.allowance,
+          txs.tx_signer
+     FROM near.core.fact_actions_events_addkey ak
+LEFT JOIN near.core.fact_transactions txs
+       ON ak.tx_hash = txs.tx_hash
+    WHERE ak.receiver_id = 'social.near'
+      AND txs.tx_status = 'Success'
+      AND ak.block_timestamp IS NOT NULL
+      AND ak.block_timestamp < CURRENT_DATE
+),
+
+unique_auths AS (
+ SELECT block_timestamp as first_sign,
+        tx_signer
+   FROM sn_auths
+QUALIFY ROW_NUMBER() OVER (PARTITION BY tx_signer ORDER BY block_timestamp ASC) = 1 
+),
+
+swap_activity AS (
+   SELECT a.tx_signer,
+          a.first_sign,
+          s.block_timestamp,
+          s.tx_hash,
+          s.platform, 
+          s.pool_id,
+          s.token_in,
+          s.token_out
+     FROM unique_auths a
+LEFT JOIN near.core.ez_dex_swaps s
+       ON a.tx_signer = s.trader
+),
+
+swaps_agg AS (
+   SELECT tx_signer,
+          first_sign,
+          COUNT(DISTINCT tx_hash) AS number_of_swaps,
+          MIN(block_timestamp) AS first_swap
+     FROM swap_activity
+ GROUP BY tx_signer, first_sign
+)
+
+SELECT tx_signer,
+       first_sign AS first_social_sign,
+       number_of_swaps,
+       CASE
+       WHEN first_social_sign > first_swap THEN 'YES'
+       WHEN first_swap IS NULL THEN 'NEVER'
+       ELSE 'NO'
+       END AS swaps_b4_social
+ FROM swaps_agg

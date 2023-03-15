@@ -1,0 +1,51 @@
+WITH
+sn_auths AS (
+   SELECT ak.block_timestamp,
+          ak.tx_hash,
+          ak.block_id,
+          ak.allowance,
+          txs.tx_signer
+     FROM near.core.fact_actions_events_addkey ak
+LEFT JOIN near.core.fact_transactions txs
+       ON ak.tx_hash = txs.tx_hash
+    WHERE ak.receiver_id = 'social.near'
+      AND txs.tx_status = 'Success'
+      AND ak.block_timestamp IS NOT NULL
+      AND ak.block_timestamp < CURRENT_DATE
+),
+
+unique_auths AS (
+ SELECT block_timestamp,
+        tx_signer
+   FROM sn_auths
+QUALIFY ROW_NUMBER() OVER (PARTITION BY tx_signer ORDER BY block_timestamp ASC) = 1 
+),
+
+wallet_creation AS (
+SELECT tx_signer,
+       MIN(block_timestamp) AS first_timestamp_txs
+  FROM near.core.fact_transactions
+ WHERE tx_signer IN (SELECT tx_signer FROM unique_auths)
+ GROUP BY tx_signer
+)
+
+   SELECT a.tx_signer AS user,
+          a.block_timestamp::date AS first_social_sign,
+          w.first_timestamp_txs::date AS wallet_creation,
+          DATEDIFF('day', w.first_timestamp_txs, a.block_timestamp) AS age_days,
+          CASE 
+          WHEN age_days = 0 THEN 'SAME DAY'
+          WHEN age_days BETWEEN 1 AND 90 THEN '0-3 MONTHS'
+          WHEN age_days BETWEEN 91 AND 180 THEN '3-6 MONTHS'
+          WHEN age_days BETWEEN 181 AND 365 THEN '6-12 MONTHS'
+          WHEN age_days BETWEEN 366 AND 730 THEN '1-2 YEARS'
+          ELSE '+2 YEARS'
+          END AS age_category,
+          CASE
+          WHEN LEN(user) = 64 THEN 'NO'
+          ELSE 'YES'
+          END AS human_readable
+     FROM unique_auths a
+LEFT JOIN wallet_creation w
+       ON a.tx_signer = w.tx_signer
+ ORDER BY first_social_sign DESC

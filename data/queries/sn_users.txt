@@ -1,0 +1,24 @@
+WITH
+sn_auths AS (
+   SELECT ak.block_timestamp,
+          ak.tx_hash,
+          ak.allowance,
+          txs.tx_signer
+     FROM near.core.fact_actions_events_addkey ak
+LEFT JOIN near.core.fact_transactions txs
+       ON ak.tx_hash = txs.tx_hash
+    WHERE ak.receiver_id = 'social.near'
+     AND txs.tx_status = 'Success'
+),
+
+unique_auths AS (
+ SELECT block_timestamp,
+        tx_signer
+   FROM sn_auths
+QUALIFY ROW_NUMBER() OVER (PARTITION BY tx_signer ORDER BY block_timestamp ASC) = 1 
+)
+
+SELECT tx_signer AS signer,
+       block_timestamp AS first_auth
+  FROM unique_auths
+ORDER BY first_auth DESC
