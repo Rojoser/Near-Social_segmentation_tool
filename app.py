@@ -117,7 +117,7 @@ df9 = agg_by_column(df6[['user', 'staked_before_social']], 'staked_before_social
 df10 = agg_by_column(df6[['user', 'defi_category']], 'defi_category').rename({'user': 'wallets'}, axis=1)
 
 # Set st tabs
-tabs = st.tabs(["Introduction", "Wallet age and address type", "DeFi", "Social.NEAR activity", "Usage Notes and Methodology"])
+tabs = st.tabs(["Introduction", "Wallet age and address type", "DeFi", "Social.NEAR activity", "Keys Insights and Methodology"])
 
 with tabs[0]: # Introduction
     st.write('''Social.NEAR is an on-chain social network built on the NEAR blockchain that has recently seen a surge 
@@ -343,21 +343,42 @@ with tabs[2]: # DeFi
 with tabs[3]: # Near Social activity
     st.write('Coming Soon - users profile according to their activity on Near Social')
 
-with tabs[4]: # Methodology
+with tabs[4]: # Keys Insights and Methodology
     st.markdown('''
-        # Methodology
+        ## Key Insights
+
+        Based on a first look at the data in the different predefined timeframes, the following key points can be identified:
+
+        - Social Near seems to onboard either very old or very new wallets.
+        
+        - Same day signers, i.e. users signing in to Social Near the same day they make their first on-chain transaction, could mean that a new user is
+        onboarded on NEAR through the social platform or that an existing user creates a new account for social interactions.
+
+        - Users who to chose their account ID name (human readable) vary between 75-80\% of total users. For same day signers though, 
+        the field is almost leveled (55\% to 45\% split).
+
+        - The majority of users didn't use swapped tokens (67\%-72\%) or staked NEAR tokens (80\%-85\%). The more recent that the chosen timeframe is,
+        the less DeFi activity.
+
+        - Amongst the ones that did use any of this DeFi products, swappers are more abundant than stakers.
+
+        These are some observations made on the day on the publication of this tool and could be different in the future.
+
+        ## Methodology
 
         This dashboard was done using [Flipside Crypto](https://flipsidecrypto.xyz/) [ShroomDK](https://sdk.flipsidecrypto.xyz/shroomdk) API. 
         The on-chain data was queried from the `fact_actions_events_addkey`, `fact_transactions`, `ez_dex_swaps` and `dim_staking_actions` tables
         from the `near.core` schema.
 
         All relevant project files can be accessed through its [GitHub public repo](https://github.com/Rojoser/Near-Social_segmentation_tool). 
-        Under the [Project Organization](https://github.com/Rojoser/Near-Social_segmentation_tool#project-organization) section, the SQL queries and 
-        csv files are available to anyone looking where the data came from:
+        The SQL queries and csv files are available to anyone looking where the data came from:
 
-            - Raw SQL queries are saved as .txt files under the `data/queries` folder.
+        - Raw SQL queries are saved as .txt files under the `data/queries` folder.
 
-            - Query results are saved as .csv files under the `data/csv` folder.
+        - Query results are saved as .csv files under the `data/csv` folder.
 
-            - A Jupyter Notebook (.ipynb file) with the API calls and SQL queries can be found under the `\notebook` folder in the project's repo.     
+        - A Jupyter Notebook (.ipynb file) with the API calls and SQL queries can be found under the `/notebook` folder in the project's repo.
+
+        You can contact me on [LinkedIn](https://www.linkedin.com/in/rojoserrano/) or in Twitter [@rojoser_data](https://twitter.com/rojoser_data) 
+        for any question, suggestion or discussion.   
     ''')

@@ -71,7 +71,7 @@ stake_agg AS (
 )
 
     SELECT s.tx_signer as user,
-           DATE_TRUNC('day', s.first_sign) AS first_social_sign,
+           s.first_sign::date AS first_social_sign,
            s.number_of_swaps,
            CASE 
            WHEN s.number_of_swaps = 0 THEN 'NO SWAPS'
