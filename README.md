@@ -21,11 +21,14 @@ Project Organization
     ├── notebooks          <- Jupyter notebooks used to query the on-chain data via API.
     │
     ├── requirements.txt   <- The requirements file for reproducing the analysis environment.
-    │                         Generated with `pip freeze --format=freeze > requirements.txt` to avoid odd path references.
+    │                         Generated with `pip freeze --format=freeze > requirements.txt` 
+    │   		       to avoid odd path references.
     │
     └── app.py             <- Python script to deploy the app in Streamlit
 
 
-# TODO
-1. add NFT, Social Activity Tabs
-3. publish the dahsboard in Twitter and LinkedIn 
+Future improvements
+------------
+
+- Analyse Near Social Activity using on-chain data
+- Explore ways to analyse developer activity (GitHub or on-chain data)
