@@ -355,7 +355,7 @@ with tabs[4]: # Keys Insights and Methodology
         onboarded on NEAR through the social platform or that an existing user creates a new account for social interactions.
 
         - Users who to chose their account ID name (human readable) vary between 75-80\% of total users. For same day signers though, 
-        the field is almost leveled (55\% to 45\% split).
+        the field is almost leveled with implicit, 64-character addresses (55\% to 45\% split).
 
         - The majority of users didn't use swapped tokens (67\%-72\%) or staked NEAR tokens (80\%-85\%). The more recent that the chosen timeframe is,
         the less DeFi activity.
