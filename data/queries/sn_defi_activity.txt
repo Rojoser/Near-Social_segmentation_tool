@@ -1,0 +1,112 @@
+WITH
+sn_auths AS (
+   SELECT ak.block_timestamp,
+          ak.tx_hash,
+          ak.block_id,
+          ak.allowance,
+          txs.tx_signer
+     FROM near.core.fact_actions_events_addkey ak
+LEFT JOIN near.core.fact_transactions txs
+       ON ak.tx_hash = txs.tx_hash
+    WHERE ak.receiver_id = 'social.near'
+      AND txs.tx_status = 'Success'
+      AND ak.block_timestamp IS NOT NULL
+      AND ak.block_timestamp < CURRENT_DATE
+),
+
+unique_auths AS (
+ SELECT block_timestamp as first_sign,
+        tx_signer
+   FROM sn_auths
+QUALIFY ROW_NUMBER() OVER (PARTITION BY tx_signer ORDER BY block_timestamp ASC) = 1 
+),
+
+swap_activity AS (
+   SELECT a.tx_signer,
+          a.first_sign,
+          s.block_timestamp,
+          s.tx_hash,
+          s.platform, 
+          s.pool_id,
+          s.token_in,
+          s.token_out
+     FROM unique_auths a
+LEFT JOIN near.core.ez_dex_swaps s
+       ON a.tx_signer = s.trader
+),
+
+swaps_agg AS (
+   SELECT tx_signer,
+          first_sign,
+          COUNT(DISTINCT tx_hash) AS number_of_swaps,
+          MIN(block_timestamp) AS first_swap
+     FROM swap_activity
+ GROUP BY tx_signer, first_sign
+),
+
+stake_activity AS (
+   SELECT a.tx_signer,
+          a.first_sign,
+          st.block_timestamp,
+          st.tx_hash,
+          st.action,
+          st.pool_address,
+          CASE st.action
+          WHEN 'Stake' THEN st.stake_amount/pow(10,24)
+          WHEN 'Unstake' THEN -st.stake_amount/pow(10,24)
+          END as stake_amount_NEAR
+     FROM unique_auths a
+LEFT JOIN near.core.dim_staking_actions st
+       ON a.tx_signer = st.tx_signer
+),
+
+stake_agg AS (
+   SELECT tx_signer,
+          first_sign,
+          COUNT(DISTINCT tx_hash) AS number_stake_actions,
+          SUM(stake_amount_NEAR) AS current_stake_raw,
+          MIN(block_timestamp) AS first_stake
+     FROM stake_activity
+ GROUP BY tx_signer, first_sign
+)
+
+    SELECT s.tx_signer as user,
+           DATE_TRUNC('day', s.first_sign) AS first_social_sign,
+           s.number_of_swaps,
+           CASE 
+           WHEN s.number_of_swaps = 0 THEN 'NO SWAPS'
+           WHEN s.number_of_swaps BETWEEN 1 AND 10 THEN '1-10 SWAPS'
+           WHEN s.number_of_swaps BETWEEN 11 AND 50 THEN '11-50 SWAPS'
+           WHEN s.number_of_swaps > 50 THEN '+50 SWAPS'
+           END AS swaps_category,
+           CASE
+           WHEN first_social_sign > s.first_swap THEN 'YES'
+           WHEN s.first_swap IS NULL THEN 'NEVER SWAPPED'
+           ELSE 'NO'
+           END AS swapped_before_social,
+           st.number_stake_actions,
+           st.current_stake_raw,
+           CASE
+           WHEN st.current_stake_raw < 0 THEN 0
+           WHEN st.current_stake_raw IS NULL THEN 0
+           ELSE st.current_stake_raw
+           END AS current_stake,
+           CASE 
+           WHEN current_stake = 0 THEN 'NO STAKE'
+           WHEN current_stake > 0 AND current_stake <= 100 THEN '0-100 STAKED'
+           WHEN current_stake > 100 THEN '+100 STAKED'
+           END AS stake_category,
+           CASE
+           WHEN first_social_sign > st.first_stake THEN 'YES'
+           WHEN st.first_stake IS NULL THEN 'NEVER STAKED'
+           ELSE 'NO'
+           END AS staked_before_social,
+           CASE
+           WHEN s.first_swap IS NULL AND st.first_stake IS NULL THEN 'NO DEFI ACTIVITY'
+           WHEN s.first_swap IS NULL AND st.first_stake IS NOT NULL THEN 'ONLY STAKED'
+           WHEN s.first_swap IS NOT NULL AND st.first_stake IS NULL THEN 'ONLY SWAPPED'
+           ELSE 'DEFI MASTER'
+           END AS defi_category         
+      FROM swaps_agg s
+ LEFT JOIN stake_agg st
+        ON s.tx_signer = st.tx_signer

@@ -1,5 +1,4 @@
 # Import
-
 import pandas as pd
 import numpy as np
 import streamlit as st
@@ -35,7 +34,7 @@ def agg_by_column(df, column):
     return df.groupby(column).count().reset_index()
 
 ## Dataframe for global variables - all-time signers
-df1 = load_data('data/auths_raw_df.csv')
+df1 = load_data('data/csv/auths_raw_df.csv')
 
 df1_agg = agg_by_column(df1[['user', 'first_social_sign']],'first_social_sign').rename({'first_social_sign': 'Date', 'user':'Daily Users'}, axis=1)
 
@@ -102,8 +101,20 @@ df3 = agg_by_column(df2[['user', 'age_category']], 'age_category').rename({'user
 ## Dataframe for human-readable addresses pie 
 df4 = agg_by_column(df2[['user', 'human_readable']], 'human_readable').rename({'user': 'wallets'}, axis=1)
 
-## Dataframe for swaps 
-df5 = load_data('data/swaps_raw_df.csv')
+## Dataframe for same day signers by human-readable
+df5 = agg_by_column(df2[df2['age_days']==0][['user', 'human_readable']], 'human_readable').rename({'user': 'wallets'}, axis=1)
+
+## Dataframes for DeFi
+df6_load = load_data('data/csv/defi_raw_df.csv')
+df6 = select_data(df6_load,'first_social_sign', begin_date, end_date)
+
+df7 = agg_by_column(df6[['user', 'swaps_category']], 'swaps_category').rename({'user': 'wallets'}, axis=1)
+df8 = agg_by_column(df6[['user', 'swapped_before_social']], 'swapped_before_social').rename({'user': 'wallets'}, axis=1)
+
+df11 = agg_by_column(df6[['user', 'stake_category']], 'stake_category').rename({'user': 'wallets'}, axis=1)
+df9 = agg_by_column(df6[['user', 'staked_before_social']], 'staked_before_social').rename({'user': 'wallets'}, axis=1)
+
+df10 = agg_by_column(df6[['user', 'defi_category']], 'defi_category').rename({'user': 'wallets'}, axis=1)
 
 ## Dataframe for signers - selected timeframe wallet age and social activity
 #df3 = df2[(df2['Date']>= np.datetime64(begin_date)) & (df2['Date']<= np.datetime64(end_date))]
@@ -112,10 +123,11 @@ df5 = load_data('data/swaps_raw_df.csv')
 # Set st tabs
 tabs = st.tabs(["Introduction", "Wallet age and address type", "Social.NEAR activity", "DeFi", "NFT"])
 
-with tabs[0]:
+with tabs[0]: # Introduction
     st.write('''Social.NEAR is an on-chain social network built on the NEAR blockchain that has recently seen a surge 
-    in the number of users signing in for the first time. This dashboard presents a tool to analyze the new user segmentation 
-    for a given timeframe. To operate it, select a timeframe on the left sidebar and navigate through the tabs to analyze different profile categories.
+    in the number of users signing in for the first time. 
+    This dashboard presents a tool to analyze the new user segmentation for a given timeframe. 
+    To operate it, select a timeframe on the left sidebar and navigate through the tabs to analyze different profile categories.
     ''')
 
     cols = st.columns([1,2,2,2,1])
@@ -163,19 +175,32 @@ with tabs[0]:
     st.markdown('''For more info on Social.Near visit http://near.social or 
     this wonderful [article on NEAR wiki](https://thewiki.near.page/PastPresentAndFutureOfNearSocial)''')
 
-with tabs[1]:
+with tabs[1]: # "Wallet age and address type
     # Wallet age at sign in plot
     st.write('''This tab analyses the wallet age when signing to social.near contract for the first time and 
-    whether the addresses are human-readable or not (64 alphanumeric characters)''')
-
-    cols = st.columns([1,2,2,2,2,1])
-    cols[1].metric("Total users in timeframe", df2['age_days'].size, help='First-time signers of social.near contract in selected timeframe')
-    cols[2].metric("Wallet average age", round(df2['age_days'].mean(),2), help='Average wallet age at first sign-in')
-    cols[3].metric("Wallet mode age", round(df2['age_days'].mode(),2), help='Mode wallet age at first sign-in')
-    cols[4].metric("Same day signers", df2['age_days'][df2['age_days']==0].size, help='Wallets signing to Near Social the same day they were created')
+    whether the addresses are human-readable or not (user chosen or 64 alphanumeric characters cryptographically created)''')
 
     with st.container():
-        cols = st.columns(2)
+        cols = st.columns([1,2,2,2,2,1])
+        cols[1].metric("Total users in timeframe", df2['age_days'].size, help='First-time signers of social.near contract in selected timeframe')
+        cols[2].metric("Wallet average age", round(df2['age_days'].mean(),2), help='Average wallet age at first sign-in')
+        cols[3].metric("Wallet mode age", round(df2['age_days'].mode(),2), help='Mode wallet age at first sign-in')
+        cols[4].metric("Same day signers", df2['age_days'][df2['age_days']==0].size, help='Wallets signing to Near Social the same day they were created')
+
+    with st.container():
+        cols = st.columns(3)
+
+        with cols[0]:
+            fig = px.pie(df3,
+                        values='wallets',
+                        names='age_category',
+                        title='Wallets by age category')
+
+            fig.update_traces(textinfo='percent+label')
+
+            fig.update(layout_showlegend=False)
+
+            st.plotly_chart(fig, use_container_width=True)
 
         with cols[1]:
             fig = px.pie(df4,
@@ -189,11 +214,11 @@ with tabs[1]:
 
             st.plotly_chart(fig, use_container_width=True)
 
-        with cols[0]:
-            fig = px.pie(df3,
+        with cols[2]:
+            fig = px.pie(df5,
                         values='wallets',
-                        names='age_category',
-                        title='Wallets by age category')
+                        names='human_readable',
+                        title='Human readable addresses of same day signers')
 
             fig.update_traces(textinfo='percent+label')
 
@@ -237,3 +262,92 @@ with tabs[1]:
 
         st.plotly_chart(fig, use_container_width=True)
 
+with tabs[2]: # Social.NEAR activity
+    st.write('Tab2')
+
+with tabs[3]: # DeFi
+    st.write('''This Tab takes a look at the users DeFi activity. It will compare wallets based on swap and stake activity 
+    and whether the users had swapped or staked before signing to Near Social.''')
+
+    with st.container():
+        cols = st.columns([1,2,2,2,2,1])
+        cols[1].metric("Total users in timeframe", df2['age_days'].size, 
+                        help='First-time signers of social.near contract in selected timeframe')
+        cols[2].metric("Average number of swaps", round(df6['number_of_swaps'].mean(),2), 
+                        help='Average number of swaps of all signers')
+        cols[3].metric("Average number of stake actions", round(df6['number_stake_actions'].mean(),2), 
+                        help='Average number of stake actions of all signers')
+        cols[4].metric("Average stake of current stakers", str(round(df6[df6['current_stake']!=0]['current_stake'].mean(),2)) + ' NEAR', 
+                        help='Average stake amount of users currently staking NEAR')
+
+    with st.container():
+        cols = st.columns(3)
+        
+        st.dataframe(df6)
+
+        with cols[0]:
+            fig = px.pie(df7,
+                        values='wallets',
+                        names='swaps_category',
+                        title='Wallets by number of swaps')
+
+            fig.update_traces(textinfo='percent+label')
+
+            fig.update(layout_showlegend=False)
+
+            st.plotly_chart(fig, use_container_width=True)
+
+        with cols[1]:
+            fig = px.pie(df11,
+                        values='wallets',
+                        names='stake_category',
+                        title='Wallets by stake category')
+
+            fig.update_traces(textinfo='percent+label')
+
+            fig.update(layout_showlegend=False)
+
+            st.plotly_chart(fig, use_container_width=True)
+            
+        with cols[2]:
+            fig = px.pie(df10,
+                        values='wallets',
+                        names='defi_category',
+                        title='Wallets by DeFi usage')
+
+            fig.update_traces(textinfo='percent+label')
+
+            fig.update(layout_showlegend=False)
+
+            st.plotly_chart(fig, use_container_width=True)
+    
+    with st.container():
+        cols = st.columns([1,2,2,1])
+
+        with cols[1]:
+            fig = px.pie(df8,
+                        values='wallets',
+                        names='swapped_before_social',
+                        title='Did users swap before signing to Near Social?')
+
+            fig.update_traces(textinfo='percent+label')
+
+            fig.update(layout_showlegend=False)
+
+            st.plotly_chart(fig, use_container_width=True)
+            
+        with cols[2]:
+            fig = px.pie(df9,
+                        values='wallets',
+                        names='staked_before_social',
+                        title='Did users stake before signing to Near Social?')
+
+            fig.update_traces(textinfo='percent+label')
+
+            fig.update(layout_showlegend=False)
+
+            st.plotly_chart(fig, use_container_width=True)
+
+
+with tabs[4]: # NFT
+    st.write('Tab2')

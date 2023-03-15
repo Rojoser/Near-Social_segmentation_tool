@@ -9,6 +9,8 @@ LEFT JOIN near.core.fact_transactions txs
        ON ak.tx_hash = txs.tx_hash
     WHERE ak.receiver_id = 'social.near'
      AND txs.tx_status = 'Success'
+     AND ak.block_timestamp IS NOT NULL
+     AND ak.block_timestamp < CURRENT_DATE
 ),
 
 unique_auths AS (

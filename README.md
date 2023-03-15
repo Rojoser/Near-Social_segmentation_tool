@@ -12,25 +12,20 @@ In its first iteration, it will be submitted to the [MetricsDAO](https://metrics
 Project Organization
 ------------
 
-    ├── LICENSE
+    ├── LICENSE            <- Mozilla Public License Version 2.0
     ├── README.md          <- The top-level README for developers using this project.
     ├── data
     │   ├── queries        <- SQL queries of the on-chain data.
     │   └── csv            <- Results of SQL queries that will be loaded to the app.
     │
-    ├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
-    │                         the creator's initials, and a short `-` delimited description, e.g.
-    │                         `1.0-jqp-initial-data-exploration`.
+    ├── notebooks          <- Jupyter notebooks used to query the on-chain data via API.
     │
     ├── requirements.txt   <- The requirements file for reproducing the analysis environment.
-    │                         Generated with `pip freeze --format=freeze > requirements.txt` to avoid odd path references
+    │                         Generated with `pip freeze --format=freeze > requirements.txt` to avoid odd path references.
     │
-    ├── near_social_segment_app.py           <- makes project pip installable (pip install -e .) so src can be imported
-    │
-    └── tox.ini            <- tox file with settings for running tox; see tox.readthedocs.io
+    └── app.py             <- Python script to deploy the app in Streamlit
 
 
 # TODO
-1. deploy first iteration on Streamlit
-2. add DeFi, NFT, Social Activity Tabs
+1. add NFT, Social Activity Tabs
 3. publish the dahsboard in Twitter and LinkedIn 
